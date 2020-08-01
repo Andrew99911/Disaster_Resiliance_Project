@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 """
 Created on Thu Jul 30 18:06:25 2020
+
+@author: Andrew
 """
 
 # Import packages
@@ -12,27 +15,43 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import QuantileTransformer
 from sklearn.feature_selection import VarianceThreshold
 
+
 # Import Relevant Data
-data = pd.read_csv(r"C:\Users\Andrew\OneDrive\Documents\Disaster Project\NOAA_Precep_Data.csv")
+data = pd.read_csv(r"C:\Users\Andrew\OneDrive\Documents\Disaster Project\Raw_Data_(PatapscoRiver+Weather).csv")
+data['Flow_Rate_Future'] = ""
 
-# NEED DATA!!! ADJUST REST OF FILE LATER
+# Create Prediction Column
+hours_ahead = 6
+i = -1
+for flow in data['flow_rate']:
+    i = i + 1
+    if hours_ahead > i:
+        continue
+    else:
+        data['Flow_Rate_Future'][i-hours_ahead] = flow   
 
-# Take mean average for similar dates
-data = data.groupby('DATE').mean().reset_index()
-data.index = data['DATE']
+data['Flow_Rate_Future'] = pd.to_numeric(data["Flow_Rate_Future"], downcast="float")
+
+# Drop Unwanted Columns
+data = data.drop('date_time',axis=1)
+data = data.drop('flow_rate_future (3 days)',axis=1)
+data = data.drop('flow_rate_future (7 days)',axis=1)
+data = data.drop('turbidity',axis=1)
+data = data.dropna()
 
 #---- Label Encoder
-for c in data.columns:
-    if data[c].dtype == 'object':
-        lbl = LabelEncoder()
-        lbl.fit(list(data[c].values))
-        data[c] = lbl.transform(list(data[c].values))
+#for c in data.columns:
+#    if data[c].dtype == 'object':
+#        lbl = LabelEncoder()
+#        lbl.fit(list(data[c].values))
+#        data[c] = lbl.transform(list(data[c].values))
 
 # Test train split
-y = list(data['Target Var'])
-X = data.drop('Target Var',axis=1)
+y = list(data['Flow_Rate_Future'])
+X = data.drop('Flow_Rate_Future',axis=1)
 
 # Drop Low Variance
 sel = VarianceThreshold(threshold = 0.05)
@@ -51,14 +70,20 @@ X = X.drop(to_drop,axis = 1)
 std = StandardScaler()
 X = std.fit_transform(X)
 
+# Standardize y
+#qstd = QuantileTransformer()
+#y = np.array(y).reshape(1,-1)
+#y = qstd.fit_transform(y)
+#y = list(y)
+
 # Split Data
 X_train, X_test, y_train, y_test = train_test_split(X,y,test_size = 0.25,random_state = 12)
         
 # Parameter List
 parameters = {'objective':['reg:linear'],
-              'learning_rate': [0.1],
+              'learning_rate': [0.03],
               'n_estimators': [1000],
-              'max_depth': [6],
+              'max_depth': [15],
               'colsample_bytree': [0.7],
               'gamma': [0]}
 
@@ -82,14 +107,14 @@ y_pred_train = model.predict(X_train)
 y_pred_test = model.predict(X_test)
 
 # Print R^2 Values
-print('Test R2 = ', r2_score(y_train,y_pred_train))
+print('Train R2 = ', r2_score(y_train,y_pred_train))
 print('Test R2 = ', r2_score(y_test,y_pred_test))
 
 # Print a Parity Plot
 fig, ax = plt.subplots()
 ax.scatter(y_train, y_pred_train, color = 'b', alpha = 0.2)
-ax.scatter(y_train, y_pred_train, color = 'b', alpha = 0.2)
-ax.plot([0,1],[0,1],'k--',lw=4)
+ax.scatter(y_test, y_pred_test, color = 'r', alpha = 0.2)
+ax.plot([0,25000],[0,25000],'k--',lw=4)
 ax.set_xlabel('Measured')
 ax.set_ylabel('Predicted')
 plt.show()
