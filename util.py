@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
-from fbprophet import Prophet
-from fbprophet.plot import plot_plotly, plot_components_plotly
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import plotly.express as px
@@ -23,8 +22,8 @@ def gen_analysis(states):
     ret = {} # dictionary to hold all the graphs
     df = _get_df(states)
 
-    # use these 
-    ret['fbprophet'] = _gen_fbprophet_model(df, use_outliers=True)
+    # use these keys to get the correponding graphs
+    ret['prediction'] = _gen_predictive_model(df, use_outliers=True)
     ret['top10'] = _significant_months_barchart(df, metric='damage')
     ret['month_dist'] = _monthly_dist(df, metric='damage')
 
@@ -108,8 +107,8 @@ def _get_df(states):
     return df.drop(columns=['STATE', 'INJURIES_DIRECT','INJURIES_INDIRECT','DEATHS_DIRECT','DEATHS_INDIRECT']).resample('M').sum()
 
 
-def _gen_fbprophet_model(df, use_outliers=True):
-    """Using the Prophet package from Facebook, generate two interactive plotly graphs projecting damage for the next 
+def _gen_predictive_model(df, use_outliers=True):
+    """Using the Holt Winters Package, generate two interactive plotly graphs projecting damage for the next 
     56 months (i.e. until 2025). First graph is the explicit forecast, the second graph contains the trend and 
     seasonality components.
 
@@ -118,7 +117,7 @@ def _gen_fbprophet_model(df, use_outliers=True):
         use_outliers(Boolean): whether or not to filter out outliers before analysis
 
     Return:
-        tuple of plotly figures: two plotly figures for forecasting and components of forecast
+        plotly figures: plotly figures depicting forecasting
     """
 
     series = df['DAMAGE'] # select the damage series to analyze
@@ -126,27 +125,18 @@ def _gen_fbprophet_model(df, use_outliers=True):
     if not use_outliers:
         series = series[np.abs(stats.zscore(series)) < 2] # keep values within two standard deviations
 
-    # create a temporary dataframe for fbprophet to fit
-    temp = pd.DataFrame()
-    temp['ds'] = series.index
-    temp['y'] = series.values
+    model = ExponentialSmoothing(series, trend='add', seasonal='add', seasonal_periods=12)
+    fit = model.fit()
+    forecast = fit.forecast(36)
 
-    m = Prophet()
-    m.fit(temp)
+    total_series = series.append(pd.Series(forecast))
+    data = pd.DataFrame()
+    data['Month'] = total_series.index
+    data['Values'] = total_series.values
+    data.loc[0:series.size, 'Prediction'] = 'Collected Data'
+    data.loc[series.size:, 'Prediction'] = 'H-W Prediction'
 
-    # create a future dataframe to predict the next 56 months
-    future = m.make_future_dataframe(periods=56, freq='M')
-
-    # make the prediction
-    forecast = m.predict(future)
-
-    # generate the two ploty figures, first showing forecast, second showing forecast components
-    fig = plot_plotly(m, forecast)
-    fig.update_layout(title="Forecasting Damage over the next 56 Months")
-    fig2 = plot_components_plotly(m, forecast)
-    fig2.update_layout(title='Forecast Components - Trend & Seasonality')
-
-    return fig, fig2
+    return px.line(data, x='Month', y='Values', color='Prediction')
 
 
 def _significant_months_barchart(df, metric='damage'):
