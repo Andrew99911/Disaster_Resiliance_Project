@@ -66,19 +66,40 @@ def _get_df(states):
         pandas.DataFrame: Contains the injuries, deaths, property damage and crop damage of each storm for the states
         given. NOTE: The metrics are resampled to monthly sums.
     """
-
-    # subdirectory containing data
-    subdir = "data"
     
     # columns to keep from the spreadsheets
     columns = ['STATE', 'END_DATE_TIME', 'INJURIES_DIRECT','INJURIES_INDIRECT','DEATHS_DIRECT','DEATHS_INDIRECT', 
         'DAMAGE_PROPERTY', 'DAMAGE_CROPS',]
 
     # gets list of spreadsheets (NOTE: its assumed that data directory only contains relevant spreadsheets)
-    sheets_paths = os.listdir(subdir)
+    sheets_paths = [
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d1998_c20170717.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d1999_c20200518.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2000_c20200707.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2001_c20200518.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2002_c20200518.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2003_c20200518.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2004_c20200518.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2005_c20200518.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2006_c20200518.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2007_c20170717.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2008_c20180718.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2009_c20180718.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2010_c20200716.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2011_c20180718.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2012_c20200317.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2013_c20170519.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2014_c20191116.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2015_c20191116.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2016_c20190817.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2017_c20200616.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2018_c20200716.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2019_c20200716.csv',
+        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2020_c20200716.csv',
+        ]
 
     # make a df from all the spreadsheets in the data subdirectory, keeping only the columns specified
-    df = pd.concat([pd.read_csv(os.path.join(subdir, f), usecols=columns) for f in sheets_paths],ignore_index=True)
+    df = pd.concat([pd.read_csv(f, usecols=columns) for f in sheets_paths],ignore_index=True)
 
     # NOTE: all code past this point just cleans up dataframe for analysis
 
