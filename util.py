@@ -147,9 +147,10 @@ def _gen_predictive_model(df, use_outliers=True):
         series = series[np.abs(stats.zscore(series)) < 2] # keep values within two standard deviations
 
     model = ExponentialSmoothing(series, trend='add', seasonal='add', seasonal_periods=12)
-    fit = model.fit()
-    forecast = fit.forecast(36)
+    fit = model.fit() # fit model
+    forecast = fit.forecast(56) # forecast for the next 56 months (to 2025)
 
+    # toss all the original data and predictions into a temp df to create plotly graph
     total_series = series.append(pd.Series(forecast))
     data = pd.DataFrame()
     data['Month'] = total_series.index
