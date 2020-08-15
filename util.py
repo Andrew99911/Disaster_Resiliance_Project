@@ -43,11 +43,13 @@ def _str_to_num(s):
         float/int: numeric representation of the string provided.
     """
 
-    if isinstance(s, str) and s[-1] in d: 
+    if isinstance(s, str) and s[-1] in d and s != '': 
         # if its a string where the final character is K, M, or B, convert accordingly
         num, magnitude = s[:-1], s[-1]
+        if len(num) == 0:
+            num = 1
         return float(num) * 10 ** d[magnitude]
-    elif isinstance(s, str): 
+    elif isinstance(s, str) and s != '': 
         # if just a normal string (assumed to be numeric), return the float representation
         return float(s)
     else: # otherwise, we just return
@@ -145,6 +147,8 @@ def _gen_predictive_model(df, use_outliers=True):
 
     if not use_outliers:
         series = series[np.abs(stats.zscore(series)) < 2] # keep values within two standard deviations
+
+    series.dropna(inplace=True)
 
     model = ExponentialSmoothing(series, trend='add', seasonal='add', seasonal_periods=12)
     fit = model.fit() # fit model
