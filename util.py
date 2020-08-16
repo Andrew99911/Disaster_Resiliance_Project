@@ -170,6 +170,10 @@ def _gen_predictive_model(df, use_outliers=True):
     data['Values'] = series.values
     fig1 = px.line(data, x='Month', y='Values')
     
+    # discard negative values in the forecast
+    forecast[forecast < 0] = 0
+
+    # create second graph with temp df
     data2 = pd.DataFrame()
     data2['Month'] = forecast.index
     data2['Values'] = forecast.values
