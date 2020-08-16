@@ -27,6 +27,16 @@ def gen_analysis(states):
     ret['prediction'] = _gen_predictive_model(df, use_outliers=True)
     ret['top10'] = _significant_months_barchart(df, metric='damage')
     ret['month_dist'] = _monthly_dist(df, metric='damage')
+    ret['total_injuries'] = df['INJURIES'].sum()
+    ret['total_deaths'] = df['DEATHS'].sum()
+    
+    temp = df['DAMAGE'].sum()
+    magnitude = 0
+    while temp >= 1000:
+        magnitude += 1
+        temp /= 1000.0
+    # add more suffixes if you need them
+    ret['total_damage'] =  ('%.2f%s' % (temp, ['', 'K', 'M', 'B', 'T', 'Q'][magnitude]))
 
     return ret
 
