@@ -193,11 +193,12 @@ def _significant_months_barchart(df, metric='damage'):
     # create dataframe for plotting
     data = pd.DataFrame()
     data['Month'] = series.index.strftime("%B %Y") # reformat datetime as MonthName Year
-    data['Year'] = series.index.strftime("%Y") # to color by year
+    Decade_Filter = series.index < pd.to_datetime(datetime.date(2009, 1, 1))
+    data['TimeFrame'] = ['Before 2009' if x else '2009 & After' for x in Decade_Filter]
     data[metric.upper()] = series.values
 
     # generate figure using color code
-    fig = px.bar(data, x='Month', y=metric.upper(), color='Year', title=title) 
+    fig = px.bar(data, x='Month', y=metric.upper(), color='TimeFrame', title=title) 
     fig.update_layout(xaxis_categoryorder = 'total descending') # ensure it is descending order
 
     return fig
