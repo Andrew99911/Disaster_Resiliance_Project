@@ -5,6 +5,7 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import plotly.express as px
+from datetime import datetime
 import calendar
 
 def gen_analysis(states):
@@ -132,15 +133,14 @@ def _get_df(states):
 
 def _gen_predictive_model(df, use_outliers=True):
     """Using the Holt Winters Package, generate two interactive plotly graphs projecting damage for the next 
-    56 months (i.e. until 2025). First graph is the explicit forecast, the second graph contains the trend and 
-    seasonality components.
+    56 months (i.e. until 2025). First graph is the historical data, second is the predictions
 
     Args:
         df (pandas.DataFrame): DataFrame containing monthly sums to analyze/forecast
         use_outliers(Boolean): whether or not to filter out outliers before analysis
 
     Return:
-        plotly figures: plotly figures depicting forecasting
+        tuple of two plotly figures: plotly figures depicting historical data and predictions
     """
 
     series = df['DAMAGE'] # select the damage series to analyze
@@ -152,17 +152,20 @@ def _gen_predictive_model(df, use_outliers=True):
 
     model = ExponentialSmoothing(series, trend='add', seasonal='add', seasonal_periods=12)
     fit = model.fit() # fit model
-    forecast = fit.forecast(56) # forecast for the next 56 months (to 2025)
+    forecast = pd.Series(fit.forecast(56)) # forecast for the next 56 months (to 2025)
 
-    # toss all the original data and predictions into a temp df to create plotly graph
-    total_series = series.append(pd.Series(forecast))
+    # toss all the original data and predictions into two seperate plotly graphs
     data = pd.DataFrame()
-    data['Month'] = total_series.index
-    data['Values'] = total_series.values
-    data.loc[0:series.size, 'Prediction'] = 'Collected Data'
-    data.loc[series.size:, 'Prediction'] = 'H-W Prediction'
-
-    return px.line(data, x='Month', y='Values', color='Prediction')
+    data['Month'] = series.index
+    data['Values'] = series.values
+    fig1 = px.line(data, x='Month', y='Values')
+    
+    data2 = pd.DataFrame()
+    data2['Month'] = forecast.index
+    data2['Values'] = forecast.values
+    fig2 = px.line(data2, x='Month', y='Values')
+    
+    return fig1, fig2
 
 
 def _significant_months_barchart(df, metric='damage'):
@@ -192,13 +195,13 @@ def _significant_months_barchart(df, metric='damage'):
 
     # create dataframe for plotting
     data = pd.DataFrame()
-    data['Month'] = series.index.strftime("%B %Y") # reformat datetime as MonthName Year
+    data['MONTH'] = series.index.strftime("%B %Y") # reformat datetime as MonthName Year
     Decade_Filter = series.index < pd.to_datetime(datetime.date(2009, 1, 1))
     data['TimeFrame'] = ['Before 2009' if x else '2009 & After' for x in Decade_Filter]
     data[metric.upper()] = series.values
 
     # generate figure using color code
-    fig = px.bar(data, x='Month', y=metric.upper(), color='TimeFrame', title=title) 
+    fig = px.bar(data, x='MONTH', y=metric.upper(), color='TimeFrame', title=title) 
     fig.update_layout(xaxis_categoryorder = 'total descending') # ensure it is descending order
 
     return fig
@@ -232,7 +235,7 @@ def _monthly_dist(df, metric='damage'):
 
     # create dataframe for plotting
     data = pd.DataFrame()
-    data['Month'] = series.index
+    data['MONTH'] = series.index
     data[metric.upper()] = series.values
 
-    return px.bar(data, x='Month', y=metric.upper(), title=title)
+    return px.line(data, x='MONTH', y=metric.upper(), title=title)
