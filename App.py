@@ -84,65 +84,11 @@ def _get_df(states):
         given. NOTE: The metrics are resampled to monthly sums.
     """
     
-    # columns to keep from the spreadsheets
-    columns = ['STATE', 'END_DATE_TIME', 'INJURIES_DIRECT','INJURIES_INDIRECT','DEATHS_DIRECT','DEATHS_INDIRECT', 
-        'DAMAGE_PROPERTY', 'DAMAGE_CROPS',]
-
-    # gets list of spreadsheets (NOTE: its assumed that data directory only contains relevant spreadsheets)
-    sheets_paths = [
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d1998_c20170717.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d1999_c20200518.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2000_c20200707.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2001_c20200518.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2002_c20200518.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2003_c20200518.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2004_c20200518.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2005_c20200518.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2006_c20200518.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2007_c20170717.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2008_c20180718.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2009_c20180718.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2010_c20200716.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2011_c20180718.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2012_c20200317.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2013_c20170519.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2014_c20191116.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2015_c20191116.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2016_c20190817.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2017_c20200616.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2018_c20200716.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2019_c20200716.csv',
-        'https://raw.githubusercontent.com/Andrew99911/Disaster_Resiliance_Project/master/data/StormEvents_details-ftp_v1.0_d2020_c20200716.csv',
-        ]
-
-    # make a df from all the spreadsheets in the data subdirectory, keeping only the columns specified
-    df = pd.concat([pd.read_csv(f, usecols=columns) for f in sheets_paths],ignore_index=True)
-
-    # NOTE: all code past this point just cleans up dataframe for analysis
-
-    df = df[df['STATE'].isin(states)] # only keep data from states specified
-    
-    df.reset_index(drop=True, inplace=True) # removing the indices, will be replaced with datetime indices
-
-    # set the end date of storm events as the new index
-    df.set_index('END_DATE_TIME', inplace=True)
-    df.index = pd.to_datetime(df.index) # convert to datetime objects
-    df.sort_index(inplace=True) # sort df for viewing/debugging
-
-    # convert damage columns to integer values using helper function - refer to function _str_to_num for explanation
-    df['DAMAGE_CROPS'] = df['DAMAGE_CROPS'].map(_str_to_num)
-    df['DAMAGE_PROPERTY'] = df['DAMAGE_PROPERTY'].map(_str_to_num)
-
-    df.fillna(0, inplace=True) # replace empty values with 0
-
-    # change to total injuries, deaths, damage (remove direct/indirect)
-    df['INJURIES'] = df['INJURIES_DIRECT'] + df['INJURIES_INDIRECT']
-    df['DEATHS'] = df['DEATHS_DIRECT'] + df['DEATHS_INDIRECT']
-    df['DAMAGE'] = df['DAMAGE_PROPERTY'] + df['DAMAGE_CROPS']
+    df = df_total[df_total['STATE'].isin(states)] # only keep data from states specified
 
     # return the df with unimportant columns droppped and resampled by month and summed (i.e. gives monthly sums instead
     # of individual data points)
-    return df.drop(columns=['STATE', 'INJURIES_DIRECT','INJURIES_INDIRECT','DEATHS_DIRECT','DEATHS_INDIRECT']).resample('M').sum()
+    return df.resample('M').sum()
 
 
 def _gen_predictive_model(df, use_outliers=True):
@@ -247,6 +193,11 @@ def _monthly_dist(df, metric='damage'):
     data[metric.upper()] = series.values
 
     return px.line(data, x='MONTH', y=metric.upper(), title=title)
+
+# load total dataframe
+dump_sheetnames = ['NOAAStormEventsData-dump1.csv', 'NOAAStormEventsData-dump2.csv']
+df_total = pd.concat([pd.read_csv(f, index_col='END_DATE_TIME') for f in dump_sheetnames])
+df_total.index = pd.to_datetime(df_total.index)
 
 # Create Initial Graphs
 ret = gen_analysis(['MARYLAND'])
